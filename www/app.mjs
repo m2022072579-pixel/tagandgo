@@ -15,7 +15,9 @@ const storage = {
     try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
     catch { return fallback; }
   },
-  write(key, value) { localStorage.setItem(key, JSON.stringify(value)); },
+  write(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+  },
 };
 const demo = storage.read("taggo-demo-v1", null) ?? demoState();
 seedDemoCampaigns(demo.state, shops);
@@ -132,6 +134,7 @@ async function api(path, body, secret = "", address = state.server) {
     if (!response.ok) throw Object.assign(new Error(result.error), { status: response.status });
     return result;
   } catch (error) {
+    clearTimeout(timeoutId);
     if (error.status) throw error;
     throw new Error("서버에 연결하지 못했어요. 주소와 연결 상태를 확인해 주세요.");
   }
@@ -272,7 +275,7 @@ function updateTimer() {
 
 function drawQR() {
   const canvas = dialog.querySelector("#pass-qr");
-  if (!canvas) return;
+  if (!canvas || typeof window.qrcode !== "function") return;
   const code = window.qrcode(0, "M");
   code.addData(state.pass.code);
   code.make();
@@ -324,7 +327,7 @@ function updateCampaignEstimate() {
 
 function render() {
   const focus = document.activeElement;
-  const focusId = root.contains(focus) ? focus.id : "";
+  const focusId = focus && root.contains(focus) ? focus.id : "";
   const serverDetailsOpen = state.page === "account" && root.querySelector("details.settings")?.open;
   const retentionDetailsOpen = state.page === "pos" && root.querySelector(".retention-details")?.open;
   root.innerHTML = shell(state);
@@ -882,14 +885,14 @@ if (state.server) run(refresh);
 setInterval(updateTimer, 1000);
 setInterval(async () => {
   if (document.hidden || !state.server || busy || polling || (state.dialog && state.dialog.kind !== "pass") ||
-      document.activeElement.matches("input, select, textarea")) return;
+      document.activeElement?.matches("input, select, textarea")) return;
   const before = changes;
   const counter = state.page === "pos" && state.staff;
   if (!counter && (!state.memberToken || !["home", "orders", "coupons", "history", "cafes", "shop", "account"].includes(state.page))) return;
   polling = true;
   try {
     const next = await (counter ? posRequest("overview") : memberRequest("profile"));
-    if (before !== changes || (state.dialog && state.dialog.kind !== "pass") || document.activeElement.matches("input, select, textarea")) return;
+    if (before !== changes || (state.dialog && state.dialog.kind !== "pass") || document.activeElement?.matches("input, select, textarea")) return;
     const field = counter ? "overview" : "profile";
     if (JSON.stringify(next) !== JSON.stringify(state[field])) {
       if (counter) { state.overview = next; state.managedCampaigns = next.campaigns ?? []; }
