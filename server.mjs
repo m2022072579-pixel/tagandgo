@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { networkInterfaces } from "node:os";
 import { randomInt, randomBytes, timingSafeEqual } from "node:crypto";
+import { deflateSync } from "node:zlib";
 import { shops, setShopCatalog, newState, createMember, recoverMember, memberAction, posAction } from "./www/core.mjs";
 import { campaignFeed } from "./www/campaigns.mjs";
 import { openStore } from "./storage.mjs";
@@ -24,7 +25,53 @@ const update = operation => store.update(operation);
 const setupToken = randomBytes(24).toString("hex");
 if (merchantMode && store.read().merchantServer) setShopCatalog([store.read().merchantServer.shop]);
 
-const appIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#171412"/><circle cx="256" cy="256" r="136" fill="none" stroke="#ffffff" stroke-width="32"/><text x="256" y="274" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-size="88" font-weight="700">MOA</text></svg>`;
+function makePngIcon(size) {
+  const crcTable = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+    crcTable[n] = c;
+  }
+  const chunk = (type, data) => {
+    const len = Buffer.alloc(4);
+    len.writeUInt32BE(data.length, 0);
+    const body = Buffer.concat([Buffer.from(type), data]);
+    let crc = 0xffffffff;
+    for (let i = 0; i < body.length; i++) crc = crcTable[(crc ^ body[i]) & 0xff] ^ (crc >>> 8);
+    const crcBuf = Buffer.alloc(4);
+    crcBuf.writeUInt32BE((crc ^ 0xffffffff) >>> 0, 0);
+    return Buffer.concat([len, body, crcBuf]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(size, 0);
+  ihdr.writeUInt32BE(size, 4);
+  ihdr[8] = 8; ihdr[9] = 2;
+  const rowSize = 1 + size * 3;
+  const raw = Buffer.alloc(rowSize * size);
+  const center = size / 2;
+  const outerR = size * 0.32;
+  const innerR = size * 0.22;
+  for (let y = 0; y < size; y++) {
+    const rowOffset = y * rowSize;
+    raw[rowOffset] = 0;
+    for (let x = 0; x < size; x++) {
+      const dist = Math.hypot(x - center, y - center);
+      const isRing = dist <= outerR && dist >= innerR;
+      const px = rowOffset + 1 + x * 3;
+      raw[px] = isRing ? 255 : 23;
+      raw[px + 1] = isRing ? 255 : 20;
+      raw[px + 2] = isRing ? 255 : 18;
+    }
+  }
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    chunk("IHDR", ihdr),
+    chunk("IDAT", deflateSync(raw)),
+    chunk("IEND", Buffer.alloc(0)),
+  ]);
+}
+const icon192 = makePngIcon(192);
+const icon512 = makePngIcon(512);
 
 const files = new Map([
   ["/", ["index.html", "text/html; charset=utf-8"]],
@@ -137,9 +184,9 @@ createServer(async (request, response) => {
   response.setHeader("Referrer-Policy", "no-referrer");
   try {
     const path = new URL(request.url, "http://localhost").pathname;
-    if (request.method === "GET" && path === "/icon.svg") {
-      response.writeHead(200, { "Content-Type": "image/svg+xml; charset=utf-8", "Cache-Control": "public, max-age=86400" });
-      response.end(appIconSvg);
+    if (request.method === "GET" && (path === "/icon-192.png" || path === "/icon-512.png")) {
+      response.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400" });
+      response.end(path === "/icon-192.png" ? icon192 : icon512);
       return;
     }
     if (request.method === "GET" && path === "/setup") {
