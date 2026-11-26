@@ -230,7 +230,7 @@ createServer(async (request, response) => {
     }
     if (request.method === "GET" && files.has(path)) {
       const [file, type] = files.get(path);
-      response.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'; connect-src 'self'");
+      response.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; manifest-src 'self'; worker-src 'self'; base-uri 'none'; frame-ancestors 'none'; connect-src 'self'");
       response.writeHead(200, { "Content-Type": type, "Cache-Control": "no-cache" });
       response.end(readFileSync(resolve(root, "www", file)));
       return;
