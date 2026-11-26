@@ -9,7 +9,7 @@ const notices = document.querySelector("#notice");
 const dialog = document.querySelector("#sheet");
 const native = window.TagGoAndroid;
 const launch = new URLSearchParams(location.search);
-const desktopPos = launch.get("pos") === "1";
+const desktopPos = location.pathname === "/pos" || location.pathname.startsWith("/pos/") || launch.get("pos") === "1";
 const storage = {
   read(key, fallback) {
     try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
@@ -22,8 +22,7 @@ seedDemoCampaigns(demo.state, shops);
 seedDemoHistory(demo.state, demo.secret);
 seedDemoRetention(demo.state);
 storage.write("taggo-demo-v1", demo);
-const localRoute = !native && (desktopPos || launch.get("live") === "1");
-const initialServer = localRoute ? location.origin : storage.read("taggo-server-v1", "");
+const initialServer = native ? storage.read("taggo-server-v1", "") : location.origin;
 const state = {
   native, server: initialServer, memberToken: storage.read("taggo-member-v1:" + initialServer, ""),
   page: desktopPos ? "pos" : "home", profile: initialServer ? null : memberAction(demo.state, demo.secret, "profile", {}),
@@ -81,7 +80,6 @@ function stampFeedback(qty) {
     if (native?.stampFeedback) native.stampFeedback();
     else navigator.vibrate?.(35);
   } catch {
-    // Haptic availability must not interrupt a completed stamp transaction.
   }
 }
 
@@ -136,7 +134,6 @@ async function submitPickupOrder(data) {
   try { return await memberRequest("order", data); }
   catch (error) {
     if ((error.status && error.status < 500) || !state.server) throw error;
-    // The server may have committed before the connection was lost.
     const profile = await memberRequest("profile").catch(() => null);
     if (profile?.orders.some(order => order.id === data.reference && order.shop === data.shop)) return profile;
     throw error;
@@ -317,6 +314,11 @@ function render() {
   const serverDetailsOpen = state.page === "account" && root.querySelector("details.settings")?.open;
   const retentionDetailsOpen = state.page === "pos" && root.querySelector(".retention-details")?.open;
   root.innerHTML = shell(state);
+  if (!desktopPos) {
+    root.querySelectorAll('[data-action="navigate"][data-page="pos"]').forEach(el => el.remove());
+  } else {
+    root.querySelectorAll('[data-action="navigate"]:not([data-page="pos"])').forEach(el => el.remove());
+  }
   if (serverDetailsOpen && state.page === "account") root.querySelector("details.settings").open = true;
   if (retentionDetailsOpen && state.page === "pos") root.querySelector(".retention-details").open = true;
   if (focusId) document.getElementById(focusId)?.focus({ preventScroll: true });
@@ -347,6 +349,11 @@ async function run(task) {
 }
 
 async function navigate(page) {
+  if (desktopPos && page !== "pos") page = "pos";
+  if (!desktopPos && page === "pos") {
+    notice("점주용 POS는 전용 주소(/pos)에서 접속해 주세요.");
+    return;
+  }
   state.page = page;
   closeDialog();
   window.scrollTo(0, 0);
