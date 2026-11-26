@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { networkInterfaces } from "node:os";
 import { randomInt, randomBytes, timingSafeEqual } from "node:crypto";
-import { deflateSync } from "node:zlib";
 import { shops, setShopCatalog, newState, createMember, recoverMember, memberAction, posAction } from "./www/core.mjs";
 import { campaignFeed } from "./www/campaigns.mjs";
 import { openStore } from "./storage.mjs";
@@ -25,88 +24,14 @@ const update = operation => store.update(operation);
 const setupToken = randomBytes(24).toString("hex");
 if (merchantMode && store.read().merchantServer) setShopCatalog([store.read().merchantServer.shop]);
 
-function makeOriginalMoaPng(size) {
-  const crcTable = new Uint32Array(256);
-  for (let n = 0; n < 256; n++) {
-    let c = n;
-    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
-    crcTable[n] = c;
-  }
-  const chunk = (type, data) => {
-    const len = Buffer.alloc(4);
-    len.writeUInt32BE(data.length, 0);
-    const body = Buffer.concat([Buffer.from(type), data]);
-    let crc = 0xffffffff;
-    for (let i = 0; i < body.length; i++) crc = crcTable[(crc ^ body[i]) & 0xff] ^ (crc >>> 8);
-    const crcBuf = Buffer.alloc(4);
-    crcBuf.writeUInt32BE((crc ^ 0xffffffff) >>> 0, 0);
-    return Buffer.concat([len, body, crcBuf]);
-  };
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(size, 0);
-  ihdr.writeUInt32BE(size, 4);
-  ihdr[8] = 8; ihdr[9] = 2;
-  const rowSize = 1 + size * 3;
-  const raw = Buffer.alloc(rowSize * size);
-
-  const distSeg = (px, py, x1, y1, x2, y2) => {
-    const dx = x2 - x1, dy = y2 - y1;
-    const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)));
-    return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
-  };
-
-  for (let y = 0; y < size; y++) {
-    const rowOffset = y * rowSize;
-    raw[rowOffset] = 0;
-    const ny = (y / size) * 108;
-    for (let x = 0; x < size; x++) {
-      const nx = (x / size) * 108;
-      let white = false;
-      const stroke = 3.2;
-
-      // 1. 커피잔 몸통 테두리 (M28,46 H70 V57 Q70,74 52,74 H46 Q28,74 28,57 Z)
-      if (distSeg(nx, ny, 28, 46, 70, 46) <= stroke) white = true;
-      if (distSeg(nx, ny, 28, 46, 28, 57) <= stroke) white = true;
-      if (distSeg(nx, ny, 70, 46, 70, 57) <= stroke) white = true;
-      if (distSeg(nx, ny, 45, 74, 53, 74) <= stroke) white = true;
-      if (nx <= 45 && ny >= 57 && Math.abs(Math.hypot(nx - 45, ny - 57) - 17) <= stroke) white = true;
-      if (nx >= 53 && ny >= 57 && Math.abs(Math.hypot(nx - 53, ny - 57) - 17) <= stroke) white = true;
-
-      // 2. 손잡이 (M70,50 H76 A8,8 0,0 1,76 66 H68)
-      if (distSeg(nx, ny, 70, 50, 76, 50) <= stroke) white = true;
-      if (distSeg(nx, ny, 68, 66, 76, 66) <= stroke) white = true;
-      if (nx >= 76 && Math.abs(Math.hypot(nx - 76, ny - 58) - 8) <= stroke) white = true;
-
-      // 3. 받침선 (M27,82 H76)
-      if (distSeg(nx, ny, 27, 82, 76, 82) <= stroke) white = true;
-
-      // 4. 커피 김 2줄 (M44,29 C38,33 38,36 42,39 / M57,25 C51,30 51,35 55,39)
-      if (distSeg(nx, ny, 44, 29, 39, 34) <= 2.6 || distSeg(nx, ny, 39, 34, 42, 39) <= 2.6) white = true;
-      if (distSeg(nx, ny, 57, 25, 52, 32) <= 2.6 || distSeg(nx, ny, 52, 32, 55, 39) <= 2.6) white = true;
-
-      const px = rowOffset + 1 + x * 3;
-      // 원래 MOA 파란색 배경 (#0B46C7) + 흰색 (#FFFFFF) 로고
-      raw[px] = white ? 255 : 11;
-      raw[px + 1] = white ? 255 : 70;
-      raw[px + 2] = white ? 255 : 199;
-    }
-  }
-  return Buffer.concat([
-    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
-    chunk("IHDR", ihdr),
-    chunk("IDAT", deflateSync(raw)),
-    chunk("IEND", Buffer.alloc(0)),
-  ]);
-}
-const icon192 = makeOriginalMoaPng(192);
-const icon512 = makeOriginalMoaPng(512);
-
 const files = new Map([
   ["/", ["index.html", "text/html; charset=utf-8"]],
   ["/pos", ["index.html", "text/html; charset=utf-8"]],
   ["/index.html", ["index.html", "text/html; charset=utf-8"]],
   ["/manifest.json", ["manifest.json", "application/manifest+json; charset=utf-8"]],
   ["/sw.js", ["sw.js", "text/javascript; charset=utf-8"]],
+  ["/icon-192.png", ["icon-192.png", "image/png"]],
+  ["/icon-512.png", ["icon-512.png", "image/png"]],
   ["/style.css", ["style.css", "text/css; charset=utf-8"]],
   ["/app.mjs", ["app.mjs", "text/javascript; charset=utf-8"]],
   ["/core.mjs", ["core.mjs", "text/javascript; charset=utf-8"]],
@@ -212,11 +137,6 @@ createServer(async (request, response) => {
   response.setHeader("Referrer-Policy", "no-referrer");
   try {
     const path = new URL(request.url, "http://localhost").pathname;
-    if (request.method === "GET" && (path === "/icon-192.png" || path === "/icon-512.png")) {
-      response.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "no-cache" });
-      response.end(path === "/icon-192.png" ? icon192 : icon512);
-      return;
-    }
     if (request.method === "GET" && path === "/setup") {
       if (!merchantMode || !isLocalOwner(request)) throw new HttpError(403, "점주 서버 실행 파일을 열고 PC의 localhost:8890/setup에 접속해 주세요.");
       response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Content-Security-Policy": "default-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" });
