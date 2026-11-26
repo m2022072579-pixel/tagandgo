@@ -24,10 +24,14 @@ const update = operation => store.update(operation);
 const setupToken = randomBytes(24).toString("hex");
 if (merchantMode && store.read().merchantServer) setShopCatalog([store.read().merchantServer.shop]);
 
+const appIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#171412"/><circle cx="256" cy="256" r="136" fill="none" stroke="#ffffff" stroke-width="32"/><text x="256" y="274" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-size="88" font-weight="700">MOA</text></svg>`;
+
 const files = new Map([
   ["/", ["index.html", "text/html; charset=utf-8"]],
   ["/pos", ["index.html", "text/html; charset=utf-8"]],
   ["/index.html", ["index.html", "text/html; charset=utf-8"]],
+  ["/manifest.json", ["manifest.json", "application/manifest+json; charset=utf-8"]],
+  ["/sw.js", ["sw.js", "text/javascript; charset=utf-8"]],
   ["/style.css", ["style.css", "text/css; charset=utf-8"]],
   ["/app.mjs", ["app.mjs", "text/javascript; charset=utf-8"]],
   ["/core.mjs", ["core.mjs", "text/javascript; charset=utf-8"]],
@@ -133,6 +137,11 @@ createServer(async (request, response) => {
   response.setHeader("Referrer-Policy", "no-referrer");
   try {
     const path = new URL(request.url, "http://localhost").pathname;
+    if (request.method === "GET" && path === "/icon.svg") {
+      response.writeHead(200, { "Content-Type": "image/svg+xml; charset=utf-8", "Cache-Control": "public, max-age=86400" });
+      response.end(appIconSvg);
+      return;
+    }
     if (request.method === "GET" && path === "/setup") {
       if (!merchantMode || !isLocalOwner(request)) throw new HttpError(403, "점주 서버 실행 파일을 열고 PC의 localhost:8890/setup에 접속해 주세요.");
       response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Content-Security-Policy": "default-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" });
@@ -146,7 +155,7 @@ createServer(async (request, response) => {
     }
     if (request.method === "GET" && files.has(path)) {
       const [file, type] = files.get(path);
-      response.setHeader("Content-Security-Policy", "default-src 'self'; base-uri 'none'; frame-ancestors 'none'; connect-src 'self'");
+      response.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'; connect-src 'self'");
       response.writeHead(200, { "Content-Type": type, "Cache-Control": "no-cache" });
       response.end(readFileSync(resolve(root, "www", file)));
       return;
