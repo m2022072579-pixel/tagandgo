@@ -46,8 +46,19 @@ let messageTimer;
 let stampTimer;
 let lastStamp = stampKey(state.profile);
 let counterFocusRequested = false;
+let stampFocusRequested = false;
 let bridgeId = 0;
 const requests = new Map();
+
+const hangulToQwerty = {
+  "ㅂ": "Q", "ㅃ": "Q", "ㅈ": "W", "ㅉ": "W", "ㄷ": "E", "ㄸ": "E", "ㄱ": "R", "ㄲ": "R", "ㅅ": "T", "ㅆ": "T",
+  "ㅛ": "Y", "ㅕ": "U", "ㅑ": "I", "ㅐ": "O", "ㅒ": "O", "ㅔ": "P", "ㅖ": "P",
+  "ㅁ": "A", "ㄴ": "S", "ㅇ": "D", "ㄹ": "F", "ㅎ": "G", "ㅗ": "H", "ㅓ": "J", "ㅏ": "K", "ㅣ": "L",
+  "ㅋ": "Z", "ㅌ": "X", "ㅊ": "C", "ㅍ": "V", "ㅠ": "B", "ㅜ": "N", "ㅡ": "M",
+};
+function normalizeReaderInput(raw) {
+  return String(raw ?? "").split("").map(ch => hangulToQwerty[ch] ?? ch).join("").trim().toUpperCase();
+}
 
 window.tagGoReply = (id, status, body) => {
   const request = requests.get(id);
@@ -109,11 +120,14 @@ async function api(path, body, secret = "", address = state.server) {
     try { native.request(id, address, path, JSON.stringify(body), secret); }
     catch (error) { requests.delete(id); clearTimeout(timer); reject(error); }
   });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 7000);
   try {
     const response = await fetch(address + path, {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + secret },
-      body: JSON.stringify(body), signal: AbortSignal.timeout(7000),
+      body: JSON.stringify(body), signal: controller.signal,
     });
+    clearTimeout(timeoutId);
     const result = await response.json();
     if (!response.ok) throw Object.assign(new Error(result.error), { status: response.status });
     return result;
@@ -323,7 +337,16 @@ function render() {
   if (retentionDetailsOpen && state.page === "pos") root.querySelector(".retention-details").open = true;
   if (focusId) document.getElementById(focusId)?.focus({ preventScroll: true });
   renderDialog();
-  if (counterFocusRequested) {
+  if (stampFocusRequested) {
+    stampFocusRequested = false;
+    const stampBtn = document.querySelector("#pos-stamp-submit");
+    if (stampBtn) {
+      stampBtn.focus();
+      stampBtn.scrollIntoView({ block: "center", behavior: "smooth" });
+    } else {
+      document.querySelector('[data-form="register"] input')?.focus();
+    }
+  } else if (counterFocusRequested) {
     counterFocusRequested = false;
     document.querySelector('[data-form="tag"] input')?.focus();
     document.querySelector('[data-form="tag"]')?.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -365,11 +388,13 @@ async function navigate(page) {
 }
 
 async function scan(value) {
+  const normalized = normalizeReaderInput(value);
   clearScan();
   try {
-    state.found = await posRequest("identify", { tag: value });
-    state.selectedTag = value;
+    state.found = await posRequest("identify", { tag: normalized });
+    state.selectedTag = normalized;
     state.receipt = { reference: newReference(), qty: null };
+    stampFocusRequested = true;
     if (state.found.selectedCoupon) selectCouponForRedemption(state.found.selectedCoupon);
   } catch (error) {
     render();
@@ -444,6 +469,7 @@ document.addEventListener("submit", event => {
       case "register":
         state.found = await posRequest("register", { tag: state.selectedTag, code: data.code });
         state.posNote = "키링을 등록했어요.";
+        stampFocusRequested = true;
         break;
       case "stamp": {
         const qty = Number(data.qty);
@@ -771,9 +797,13 @@ document.addEventListener("click", event => {
 });
 
 root.addEventListener("input", event => {
-  if (event.target.id !== "cafe-query") return;
-  state.query = event.target.value;
-  root.querySelector("#cafe-results").innerHTML = cafeResults(state);
+  if (event.target.id === "cafe-query") {
+    state.query = event.target.value;
+    root.querySelector("#cafe-results").innerHTML = cafeResults(state);
+  }
+  if (event.target.name === "tag") {
+    event.target.value = normalizeReaderInput(event.target.value);
+  }
 });
 root.addEventListener("change", event => {
   if (event.target.id === "wallet-shop") { state.walletShop = event.target.value; render(); }
@@ -822,17 +852,28 @@ window.tagGoRead = value => {
 };
 let buffer = "";
 let lastKey = 0;
+function keyCharFromCode(event) {
+  if (event.code?.startsWith("Key") && event.code.length === 4) return event.code.slice(3);
+  if (event.code?.startsWith("Digit") && event.code.length === 6) return event.code.slice(5);
+  if (event.code?.startsWith("Numpad") && event.code.length === 7 && /\d/.test(event.code[6])) return event.code[6];
+  if (event.code === "Minus" || event.code === "NumpadSubtract") return "-";
+  if (event.code === "Semicolon" && event.shiftKey) return ":";
+  if (event.code === "Space") return " ";
+  const mapped = normalizeReaderInput(event.key);
+  return /^[A-Z0-9 :\-]$/.test(mapped) ? mapped : "";
+}
 window.addEventListener("keydown", event => {
   if (state.page !== "pos" || !state.staff || state.dialog ||
       event.target.closest?.("input, textarea, select, [contenteditable]") || event.ctrlKey || event.altKey || event.metaKey) return;
   const now = Date.now();
-  if (now - lastKey > 150) buffer = "";
+  if (now - lastKey > 180) buffer = "";
   lastKey = now;
   if (event.key === "Enter") {
     if (buffer.length >= 4) { event.preventDefault(); window.tagGoRead(buffer); }
     buffer = "";
-  } else if (/^[a-z\d :\-]$/i.test(event.key) && buffer.length < 64) {
-    buffer += event.key;
+  } else {
+    const ch = keyCharFromCode(event);
+    if (ch && buffer.length < 64) buffer += ch;
   }
 });
 
