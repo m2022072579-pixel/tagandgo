@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <title>MOA · 점주 테스트 서버 만들기</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/store-setup.css">
+</head>
+<body>
+  <header class="site-header"><div class="setup-topbar"><a class="brand-name" href="/setup">MOA</a><span>점주 테스트 서버</span></div></header>
+  <main class="setup-main">
+    <section id="registration" hidden>
+      <header class="page-head"><h1>내 카페로 시작하세요</h1><p>매장을 등록하면 전용 점주 PIN과 고객 접속 QR을 만들어요.</p></header>
+      <form id="store-form" class="form">
+        <label>매장명<input name="name" required maxlength="40" placeholder="예: 모아 커피"></label>
+        <div class="form-pair"><label>지역<input name="area" required maxlength="40" placeholder="예: 한양대 앞"></label><label>영업시간<input name="hours" required maxlength="40" value="09:00–21:00"></label></div>
+        <label>무료 음료까지 필요한 스탬프 수<input name="goal" type="number" min="1" max="20" value="8" required></label>
+        <section class="setup-menus"><h2>매장 메뉴</h2><p class="muted small">첫 번째 음료가 스탬프를 모두 모았을 때 받는 무료 음료입니다.</p><div id="menu-rows"></div><button class="button text" id="add-menu" type="button">메뉴 추가</button></section>
+        <p class="small muted">서버는 이 PC에서 실행됩니다. 휴대폰은 같은 와이파이로 연결하고, 테스트하는 동안 서버 실행 창을 열어 두세요.</p>
+        <button class="button wide" type="submit">내 매장 테스트 서버 만들기</button>
+      </form>
+    </section>
+    <section id="ready" hidden>
+      <header class="page-head"><p class="setup-running">서버 실행 중</p><h1 id="store-title"></h1><p>고객은 접속 QR로 시작하고, 점주는 전용 PIN으로 매장을 관리하세요.</p></header>
+      <section class="setup-section"><h2>점주 로그인</h2><div class="setup-owner"><div><p class="muted small">점주 전용 PIN</p><p id="owner-pin" class="setup-pin"></p></div><a id="pos-link" class="button" href="/?pos=1" target="_blank" rel="noopener">점주 POS 열기</a></div><p class="small muted">PIN은 점주용입니다. 재발급하면 기존 점주 로그인이 해제돼요.</p><button class="button text" id="rotate-pin" type="button">점주 PIN 다시 발급</button></section>
+      <section class="setup-section"><h2>휴대폰 고객 연결</h2><p class="muted small">서버 PC와 같은 와이파이에 연결한 휴대폰 카메라로 읽어 주세요.</p><label class="setup-address-label">연결 주소<select id="connection-url" aria-label="연결 주소"></select></label><div class="setup-connection"><img id="customer-qr" alt="휴대폰 고객 접속 QR"><div><label class="form">고객 접속 주소<input id="customer-url" readonly></label><button class="button secondary" id="copy-url" type="button">주소 복사</button><p id="network-note" class="muted small"></p></div></div><a id="customer-link" class="button text" href="/?live=1" target="_blank" rel="noopener">이 PC에서 고객 화면 열기</a></section>
+      <section class="setup-section"><h2>안드로이드 앱 연결</h2><p class="muted">MOA 앱의 마이 → 테스트 서버 연결에서 아래 주소를 입력하세요.</p><input id="android-url" readonly aria-label="안드로이드 앱 서버 주소"><p class="muted small">메뉴와 적립 기준, 고객 쿠폰은 이 서버에서 함께 관리돼요. 고객용 QR 주소에는 점주 PIN이 포함되지 않습니다.</p></section>
+    </section>
+    <p id="setup-message" role="status" aria-live="polite"></p>
+    <p class="setup-footer muted small">PC를 다시 켰을 때 같은 실행 파일을 열면 등록한 매장과 적립 내역을 이어서 사용할 수 있어요.</p>
+  </main>
+  <script src="/qrcode.js"></script>
+  <script type="module" src="/store-setup.mjs"></script>
+</body>
+</html>

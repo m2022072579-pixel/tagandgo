@@ -1,0 +1,11 @@
+{
+  "name": "moa-server",
+  "version": "0.6.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "start": "node server.mjs"
+  }
+}

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="color-scheme" content="light">
+  <title>MOA · 동네 카페 멤버십</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div id="app"></div>
+  <dialog id="sheet" aria-labelledby="sheet-title">
+    <header class="sheet-head"><h2 id="sheet-title"></h2><button class="icon-button" type="button" aria-label="닫기" data-action="close-dialog">×</button></header>
+    <div id="sheet-body"></div>
+    <p id="sheet-error" role="alert"></p>
+  </dialog>
+  <div id="notice" role="status" aria-live="polite"></div>
+  <div id="stamp-feedback" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+  <script src="./qrcode.js"></script>
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>

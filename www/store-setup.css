@@ -1,0 +1,33 @@
+.setup-topbar { max-width: 760px; min-height: 72px; margin: auto; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.setup-topbar a { text-decoration: none; }
+.setup-topbar > span { color: var(--muted); font-size: 14px; }
+.setup-main { max-width: 760px; }
+.setup-main [hidden] { display: none; }
+.setup-main .page-head { margin-bottom: 32px; }
+#store-form { gap: 22px; }
+.setup-menus { border-block: 1px solid var(--line); padding: 24px 0 12px; }
+.setup-menus > p { margin: 10px 0 20px; }
+.setup-menu-row { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, .8fr) auto; gap: 10px; align-items: end; margin-bottom: 14px; }
+.setup-menu-row label { min-width: 0; }
+.setup-menu-row .button { padding-inline: 12px; }
+.setup-section { border-top: 1px solid var(--line); padding: 28px 0; }
+.setup-section h2 { margin-bottom: 16px; }
+.setup-owner { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.setup-pin { color: var(--blue); font-size: 30px; letter-spacing: .12em; font-weight: 600; font-variant-numeric: tabular-nums; }
+.setup-pin.no-pin { font-size: 15px; letter-spacing: 0; }
+.setup-running { color: var(--blue); font-weight: 600; margin-bottom: 10px; }
+.setup-address-label { display: grid; gap: 8px; margin-top: 20px; font-size: 14px; }
+.setup-connection { display: grid; grid-template-columns: 176px minmax(0, 1fr); gap: 24px; align-items: center; padding: 24px 0 8px; }
+.setup-connection img { width: 176px; height: 176px; image-rendering: pixelated; }
+.setup-connection .button { margin: 12px 0; }
+.setup-section > input { margin-top: 14px; }
+#setup-message { padding: 14px 0; color: var(--blue); font-size: 15px; overflow-wrap: anywhere; }
+#setup-message[data-error] { color: #a1342b; }
+.setup-footer { padding-top: 20px; border-top: 1px solid var(--line); }
+@media (max-width: 600px) {
+  .setup-topbar { padding-inline: 20px; }
+  .setup-menu-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border-bottom: 1px solid var(--line); padding-bottom: 16px; }
+  .setup-connection { grid-template-columns: 1fr; }
+  .setup-connection img { justify-self: center; }
+  .setup-owner { flex-wrap: wrap; }
+}
