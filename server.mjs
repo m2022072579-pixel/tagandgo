@@ -26,6 +26,7 @@ if (merchantMode && store.read().merchantServer) setShopCatalog([store.read().me
 
 const files = new Map([
   ["/", ["index.html", "text/html; charset=utf-8"]],
+  ["/pos", ["index.html", "text/html; charset=utf-8"]],
   ["/index.html", ["index.html", "text/html; charset=utf-8"]],
   ["/style.css", ["style.css", "text/css; charset=utf-8"]],
   ["/app.mjs", ["app.mjs", "text/javascript; charset=utf-8"]],
@@ -132,9 +133,6 @@ createServer(async (request, response) => {
   response.setHeader("Referrer-Policy", "no-referrer");
   try {
     const path = new URL(request.url, "http://localhost").pathname;
-    if (request.method === "GET" && path === "/" && merchantMode && store.read().merchantServer && !/[?&](?:live|pos)=1(?:&|$)/.test(request.url)) {
-      response.writeHead(302, { Location: "/?live=1" }); response.end(); return;
-    }
     if (request.method === "GET" && path === "/setup") {
       if (!merchantMode || !isLocalOwner(request)) throw new HttpError(403, "점주 서버 실행 파일을 열고 PC의 localhost:8890/setup에 접속해 주세요.");
       response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Content-Security-Policy": "default-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" });
@@ -157,7 +155,10 @@ createServer(async (request, response) => {
       json(response, 404, { error: "요청을 찾을 수 없습니다." });
       return;
     }
-    if (request.headers.origin && request.headers.origin !== "http://" + request.headers.host) throw new HttpError(403, "이 서버에서 연 화면을 사용해 주세요.");
+    if (request.headers.origin) {
+      const originHost = new URL(request.headers.origin).host;
+      if (originHost !== request.headers.host) throw new HttpError(403, "이 서버에서 연 화면을 사용해 주세요.");
+    }
     json(response, 200, execute(path, request, await parse(request)));
   } catch (error) {
     const systemError = Boolean(error.code);
@@ -165,8 +166,9 @@ createServer(async (request, response) => {
     json(response, error.status || (systemError ? 500 : 400), { error: systemError ? "저장하지 못했습니다." : error.message });
   }
 }).listen(port, host, () => {
-  console.log("MOA 테스트 서버가 시작됐습니다.");
-  console.log("이 PC에서 POS 열기  http://localhost:" + port + "/?pos=1");
+  console.log("MOA 서버가 시작됐습니다.");
+  console.log("손님용 앱  http://localhost:" + port + "/");
+  console.log("점주용 POS http://localhost:" + port + "/pos");
   if (merchantMode) console.log("점주 서버 설정  http://localhost:" + port + "/setup");
   else console.log("POS PIN  " + pin);
   if (host === "0.0.0.0") {
@@ -179,7 +181,6 @@ createServer(async (request, response) => {
 }).on("error", error => {
   store.close();
   if (error.code !== "EADDRINUSE") throw error;
-  console.error(port + " 포트를 사용 중입니다. 이미 실행한 MOA 서버가 있다면 그 창을 열어 두고 아래 주소에 접속하세요.");
-  console.error("http://localhost:" + port + (merchantMode ? "/setup" : "/"));
+  console.error(port + " 포트를 사용 중입니다.");
   process.exitCode = 1;
 });
