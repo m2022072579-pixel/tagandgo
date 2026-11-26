@@ -6,6 +6,8 @@
   <meta name="theme-color" content="#ffffff">
   <meta name="color-scheme" content="light">
   <title>MOA · 동네 카페 멤버십</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
@@ -19,5 +21,8 @@
   <div id="stamp-feedback" role="status" aria-live="polite" aria-atomic="true" hidden></div>
   <script src="./qrcode.js"></script>
   <script type="module" src="./app.mjs"></script>
+  <script>
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
+  </script>
 </body>
 </html>
