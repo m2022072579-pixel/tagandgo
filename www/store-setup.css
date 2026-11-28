@@ -13,16 +13,16 @@
 .setup-section { border-top: 1px solid var(--line); padding: 28px 0; }
 .setup-section h2 { margin-bottom: 16px; }
 .setup-owner { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
-.setup-pin { color: var(--blue); font-size: 30px; letter-spacing: .12em; font-weight: 600; font-variant-numeric: tabular-nums; }
+.setup-pin { color: var(--brand); font-size: 30px; letter-spacing: .12em; font-weight: 600; font-variant-numeric: tabular-nums; }
 .setup-pin.no-pin { font-size: 15px; letter-spacing: 0; }
-.setup-running { color: var(--blue); font-weight: 600; margin-bottom: 10px; }
+.setup-running { color: var(--brand); font-weight: 600; margin-bottom: 10px; }
 .setup-address-label { display: grid; gap: 8px; margin-top: 20px; font-size: 14px; }
 .setup-connection { display: grid; grid-template-columns: 176px minmax(0, 1fr); gap: 24px; align-items: center; padding: 24px 0 8px; }
 .setup-connection img { width: 176px; height: 176px; image-rendering: pixelated; }
 .setup-connection .button { margin: 12px 0; }
 .setup-section > input { margin-top: 14px; }
-#setup-message { padding: 14px 0; color: var(--blue); font-size: 15px; overflow-wrap: anywhere; }
-#setup-message[data-error] { color: #a1342b; }
+#setup-message { padding: 14px 0; color: var(--brand); font-size: 15px; overflow-wrap: anywhere; }
+#setup-message[data-error] { color: #9a3d2c; }
 .setup-footer { padding-top: 20px; border-top: 1px solid var(--line); }
 @media (max-width: 600px) {
   .setup-topbar { padding-inline: 20px; }

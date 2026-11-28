@@ -3,7 +3,7 @@ import { campaignTypes } from "./campaigns.mjs";
 import { rankStampBooks, filterBenefits, selectHomeDeals } from "./customer.mjs";
 
 const paths = {
-  mark: '<path d="M4 9h13v4a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6zm13 1h2a2 2 0 0 1 0 4h-2M4 22h14M9 3c-2 1-2 3 0 4m4-5c-2 1-2 3 0 4"/>',
+  mark: '<circle cx="11" cy="12" r="8"/><path d="M19 10.5h1.8a1.5 1.5 0 0 1 0 3H19M7.8 9.2a4.8 4.8 0 0 1 6.4 0M9.3 11a2.6 2.6 0 0 1 3.4 0M7.3 13.8c.7 2.2 2.1 3.2 3.7 3.8 1.6-.6 3-1.6 3.7-3.8"/><circle cx="11" cy="12.8" r="0.7" fill="currentColor"/>',
   home: '<path d="m3 11 9-7 9 7M6 10v10h12V10m-8 10v-6h4v6"/>',
   map: '<path d="M19 10c0 5-7 10-7 10S5 15 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2.4"/>',
   ticket: '<path d="M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4zM14 7v2m0 2v2m0 2v2"/>',
@@ -53,11 +53,11 @@ function retentionPanel(state) {
   const report = state.overview.retention;
   if (!report) return "";
   const active = report.trial.status === "active";
-  return `<section class="section retention-panel" aria-label="재방문 관리"><div class="retention-heading"><div><p class="eyebrow">MOA FOR CAFE</p><h2>오늘의 고객 관리</h2><p class="small muted">첫 만남이 다음 방문으로 이어지도록.</p></div>${button(active ? "파일럿 이용 안내" : "프로 파일럿 안내", "dialog", "secondary", 'data-dialog="retention-trial"')}</div>
+  return `<section class="section retention-panel" aria-label="재방문 관리"><div class="retention-heading"><div><p class="eyebrow">TAG&amp;GO FOR CAFE</p><h2>오늘의 고객 관리</h2><p class="small muted">첫 만남이 다음 방문으로 이어지도록.</p></div>${button(active ? "파일럿 이용 안내" : "프로 파일럿 안내", "dialog", "secondary", 'data-dialog="retention-trial"')}</div>
     ${!state.server ? '<p class="small muted">체험용 시연 고객이 포함돼요. 실제 매장 서버에는 만들지 않습니다.</p>' : ''}<div class="retention-summary"><span>기록된 이용 고객 <b>${report.customers}명</b></span><span>다른 날 다시 이용 <b>${report.returned}명</b></span><span>앱 내 혜택 수신 동의 <b>${report.consented}명</b></span></div>
     <div class="retention-actions">${report.segments.map(segment => `<article class="retention-action"><div><span class="eyebrow">${segment.id === "second" ? "SECOND VISIT" : "WELCOME BACK"}</span><h3>${segment.id === "second" ? "두 번째 방문을 기다려요" : "단골의 안부를 물어보세요"}</h3><p class="small muted">${segment.id === "second" ? "이용일 1일 · 마지막 이용 후 7일 이상" : "이용일 2일 이상 · 마지막 이용 후 21일 이상"}</p></div><div class="retention-action-foot"><p><strong>${segment.count}</strong>명 <small>혜택 안내 가능 ${segment.eligible}명</small></p>${button("재방문 혜택 만들기", "retention-campaign", "secondary", 'data-value="' + segment.id + '"' + (!active || !segment.eligible ? " disabled" : ""))}</div>${!segment.eligible ? '<p class="small muted">조건에 맞고 수신에 동의한 고객이 생기면 시작할 수 있어요.</p>' : ""}</article>`).join("")}</div>
     ${active ? `<p class="small muted pilot-note">무료 파일럿 · ${dateLabel.format(report.trial.endsAt)}까지 · 자동 결제 없음</p>` : '<p class="small muted pilot-note">프로 파일럿에서 대상별 혜택 등록을 30일간 무료로 시험하세요. 결제와 외부 메시지 발송은 연결되지 않았어요.</p>'}
-    <details class="retention-details"><summary>집계 기준과 고객 보기</summary><p class="small muted">이 매장의 MOA 적립·혜택 사용·픽업 완료 기록 기준입니다. 한국 시간 같은 날의 기록은 1일로 합쳐요. 실제 첫 방문이나 추가 매출을 증명하지 않아요.</p>
+    <details class="retention-details"><summary>집계 기준과 고객 보기</summary><p class="small muted">이 매장의 TAG&amp;GO 적립·혜택 사용·픽업 완료 기록 기준입니다. 한국 시간 같은 날의 기록은 1일로 합쳐요. 실제 첫 방문이나 추가 매출을 증명하지 않아요.</p>
     ${active && report.rows.length ? '<div class="retention-customers">' + report.rows.slice(0, 30).map(row => '<div class="row"><div><b>' + html(row.name) + '</b><small>확인된 이용 ' + row.days + '일 · 마지막 이용 ' + row.absentDays + '일 전</small></div><span class="small">' + (row.consent ? "앱 내 혜택 수신" : "수신 동의 없음") + '</span></div>').join("") + '</div>' : '<p class="small muted">파일럿 이용 중 이 매장의 이용 기록이 있는 고객만 표시해요.</p>'}</details></section>`;
 }
 
@@ -108,7 +108,7 @@ function benefits(state, shopId = "", preview = false) {
     <div class="benefit-rows">${visible.length ? visible.map(campaign => `<article class="benefit-row">
       <div><p class="benefit-shop">${html(shopById(campaign.shop)?.name)} · ${campaignTypes[campaign.type]}</p><h3>${html(campaign.title)}</h3>
       <p class="benefit-value"><span class="original-price">${won(campaign.price)}</span> ${won(campaign.price - campaign.discountAmount)}<span class="benefit-saving">${won(campaign.discountAmount)} ${campaign.type === "sponsor" ? "지원" : "할인"}</span></p>
-      <p class="small muted">${html(campaign.itemName)} · 할인 전 ${won(campaign.minPurchase)} 이상 구매${campaign.sponsor ? " · " + html(campaign.sponsor) : ""}${campaign.type === "first" ? " · MOA 기록 및 매장 확인 기준 첫 방문" : ""}</p>
+      <p class="small muted">${html(campaign.itemName)} · 할인 전 ${won(campaign.minPurchase)} 이상 구매${campaign.sponsor ? " · " + html(campaign.sponsor) : ""}${campaign.type === "first" ? " · TAG&amp;GO 기록 및 매장 확인 기준 첫 방문" : ""}</p>
       ${campaign.type === "sponsor" ? '<p class="small muted">주최 기관의 참여 코드가 필요해요.</p>' : ""}
       <p class="small muted">${dateTime.format(campaign.startsAt)} ~ ${dateTime.format(campaign.endsAt)} · 남은 수량 ${campaign.remaining}장</p>
       ${benefitSchedule(campaign) ? '<p class="small muted">' + benefitSchedule(campaign) + '</p>' : ""}</div>
@@ -378,7 +378,7 @@ function account(state) {
     (profile && state.features?.includes("saved-menus-v1") ? savedMenuSection(state, "", true) : "") +
     `<div class="grid two">
     ${profile ? `<section class="card panel"><div class="section-title"><h2>내 키링</h2><span class="pill ${profile.locked ? "warn" : "green"}">${profile.hasTag ? (profile.locked ? "분실 잠금 중" : "사용 중") : "미등록"}</span></div>
-    <div class="keyring-preview" role="img" aria-label="무광 로열 블루 바탕에 흰색 MOA 로고가 있는 키링 디자인 시안"><span class="keyring-ring" aria-hidden="true"></span><div class="keyring-fob" aria-hidden="true">${icon("mark")}<span>MOA</span></div></div>
+    <div class="keyring-preview" role="img" aria-label="세이지 그린 바탕에 라떼 아트와 NFC 로고가 있는 TAG&amp;GO 키링 디자인 시안"><span class="keyring-ring" aria-hidden="true"></span><div class="keyring-fob" aria-hidden="true">${icon("mark")}<span>TAG&amp;GO</span></div></div>
     <p class="small muted">키링을 등록하거나 교체할 때 매장 직원에게 연결 코드를 보여주세요.</p><p class="code">${html(profile.code)}</p>
     <div class="controls">${profile.hasTag ? button(profile.locked ? "분실 잠금 해제" : "분실 잠금", "dialog", profile.locked ? "secondary" : "danger", 'data-dialog="lock"') : ""}${button(icon("scan") + " 대신 QR 사용", "show-pass", "secondary")}</div></section>` : ""}
     <section class="card panel"><h2>쿠폰 만료 안내</h2><p class="small muted">설정한 기간 안에 만료되는 쿠폰을 홈과 알림에서 확인해요.</p>
@@ -448,7 +448,7 @@ export function shell(state) {
   const alerts = usableCoupons(profile).filter(coupon => coupon.expires <= Date.now() + reminder * 86400000).length;
   const nav = `<nav class="nav" aria-label="주 메뉴">${tabs.map(([id, symbol, label]) => button(icon(symbol) + "<span>" + label + "</span>", "navigate", "nav-item", 'data-page="' + id + '"' + (active === id ? ' aria-current="page"' : ""))).join("")}</nav>`;
   return `<header class="site-header"><div class="topbar">
-    <button class="brand" type="button" data-action="navigate" data-page="home" aria-label="MOA 홈"><span class="brand-mark">${icon("mark")}</span><span class="brand-name">MOA</span></button>
+    <button class="brand" type="button" data-action="navigate" data-page="home" aria-label="TAG&amp;GO 홈"><span class="brand-mark">${icon("mark")}</span><span class="brand-name">TAG&amp;GO</span></button>
     ${nav}<div class="top-actions">${!server ? '<span class="mode">체험 모드</span>' : ""}
       <button type="button" class="icon-button has-alert" data-action="dialog" data-dialog="alerts" aria-label="알림${alerts ? ' ' + alerts + '건' : ''}">${icon("bell")}${alerts ? "<i></i>" : ""}</button></div>
     </div></header><main id="main">${views[page](state)}</main>`;
@@ -461,7 +461,7 @@ export function dialogContent(state) {
   switch (dialog.kind) {
     case "retention-trial": {
       const trial = state.overview.retention?.trial;
-      return ["MOA Pro 무료 파일럿", '<p>동의한 고객을 대상으로 두 번째 방문·단골 재방문 혜택을 운영하고 이용 결과를 확인해요.</p><p class="small muted">30일 무료 · 자동 결제 없음 · 앱 안에서만 혜택 제공. 문자·카카오톡·푸시와 정기 결제는 연결되지 않았어요. 종료 후 기본 적립과 이미 발급한 쿠폰은 유지돼요.</p>' + (trial?.status === 'available' ? '<form class="form" data-form="retention-trial"><label class="checkbox-label"><input name="accepted" type="checkbox" required>무료 파일럿 범위와 기간을 확인했습니다</label><button class="button" type="submit">30일 무료 파일럿 시작</button></form>' : '<p class="status">' + (trial?.status === 'active' ? dateTime.format(trial.endsAt) + '까지 이용할 수 있어요.' : '무료 파일럿이 종료됐어요. 자동으로 과금되지 않습니다.') + '</p>')];
+      return ["TAG&GO Pro 무료 파일럿", '<p>동의한 고객을 대상으로 두 번째 방문·단골 재방문 혜택을 운영하고 이용 결과를 확인해요.</p><p class="small muted">30일 무료 · 자동 결제 없음 · 앱 안에서만 혜택 제공. 문자·카카오톡·푸시와 정기 결제는 연결되지 않았어요. 종료 후 기본 적립과 이미 발급한 쿠폰은 유지돼요.</p>' + (trial?.status === 'available' ? '<form class="form" data-form="retention-trial"><label class="checkbox-label"><input name="accepted" type="checkbox" required>무료 파일럿 범위와 기간을 확인했습니다</label><button class="button" type="submit">30일 무료 파일럿 시작</button></form>' : '<p class="status">' + (trial?.status === 'active' ? dateTime.format(trial.endsAt) + '까지 이용할 수 있어요.' : '무료 파일럿이 종료됐어요. 자동으로 과금되지 않습니다.') + '</p>')];
     }
     case "store-consent": return ["카페별 혜택 수신", '<p class="small muted">선택한 카페의 맞춤 혜택을 앱 안에서 표시하는 데 동의합니다. 문자·카카오톡 수신 동의와는 별개이며, 다른 카페에 내 이용 내역을 제공하지 않아요. 받지 않아도 적립·기존 쿠폰을 이용할 수 있어요.</p><div class="consent-list">' + shops.map(cafe => {
       const enabled = state.profile.storeConsents?.[cafe.id]?.enabled === true;
