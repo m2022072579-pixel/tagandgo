@@ -170,7 +170,7 @@ createServer(async (request, response) => {
     json(response, error.status || (systemError ? 500 : 400), { error: systemError ? "저장하지 못했습니다." : error.message });
   }
 }).listen(port, host, () => {
-  console.log("MOA 서버가 시작됐습니다.");
+  console.log("TAG&GO 서버가 시작됐습니다.");
   console.log("손님용 앱  http://localhost:" + port + "/");
   console.log("점주용 POS http://localhost:" + port + "/pos");
   if (merchantMode) console.log("점주 서버 설정  http://localhost:" + port + "/setup");
